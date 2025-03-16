@@ -90,23 +90,17 @@ export function ChatInterface() {
             const imageResult = await response.json();
             
             if (imageResult.success && imageResult.url) {
-              const successMessage = language === 'es'
-                ? `He generado esta imagen para ti:\n\n${imageResult.url}`
-                : `I've generated this image for you:\n\n${imageResult.url}`;
+              const successMessage = `${translations.imageGenerated}:\n\n${imageResult.url}`;
               
               botResponse = { role: 'system' as const, content: successMessage };
             } else {
-              const errorMessage = language === 'es'
-                ? `No pude generar la imagen: ${imageResult.message || 'Error desconocido'}`
-                : `Couldn't generate the image: ${imageResult.message || 'Unknown error'}`;
+              const errorMessage = translations.imageError;
               
               botResponse = { role: 'system' as const, content: errorMessage };
             }
           } catch (imageError) {
             console.error('Error generating image:', imageError);
-            const errorMessage = language === 'es'
-              ? 'Ocurrió un error al generar la imagen. Por favor, intenta con otra descripción.'
-              : 'An error occurred while generating the image. Please try with a different description.';
+            const errorMessage = translations.imageError;
             
             botResponse = { role: 'system' as const, content: errorMessage };
           }

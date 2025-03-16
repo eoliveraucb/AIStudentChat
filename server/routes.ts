@@ -59,13 +59,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Call the image generation service
       const result = await generateImage(prompt, language || 'es');
       
-      // Return the result
+      // Return the result with properly translated messages if needed
+      if (result.success && result.url) {
+        const selectedLanguage = language || 'es';
+        return res.json({
+          success: true,
+          url: result.url,
+          message: selectedLanguage === 'es' ? 
+            "He generado esta imagen para ti" : 
+            "I've generated this image for you"
+        });
+      }
+      
       return res.json(result);
     } catch (error) {
+      const reqLanguage = req.body.language || 'es';
       console.error("Image generation API error:", error);
       return res.status(500).json({ 
         success: false, 
-        message: "Error processing image generation request" 
+        message: reqLanguage === 'es' ? 
+          "No pude generar la imagen" : 
+          "Couldn't generate the image"
       });
     }
   });

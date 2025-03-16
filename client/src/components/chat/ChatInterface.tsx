@@ -111,6 +111,59 @@ export function ChatInterface() {
       handleSendMessage();
     }
   };
+  
+  // Helper function to render message content with clickable links
+  const renderMessageContent = (content: string) => {
+    // Regular expression to find URLs in text
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    
+    // If no URLs in the content, just return the content as is
+    if (!content.match(urlRegex)) {
+      return content;
+    }
+    
+    // Split the content by URLs and create an array of text and link elements
+    const parts = content.split(urlRegex);
+    const matches = content.match(urlRegex) || [];
+    
+    return parts.reduce((arr, part, index) => {
+      if (part) {
+        arr.push(<span key={`text-${index}`}>{part}</span>);
+      }
+      if (matches[index]) {
+        const url = matches[index];
+        const isImageUrl = url.match(/\.(jpeg|jpg|gif|png)$/) !== null || url.includes('images.openai.com');
+        
+        if (isImageUrl) {
+          // It's an image URL, render both link and preview
+          arr.push(
+            <div key={`img-${index}`} className="mt-2 mb-2">
+              <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">
+                {url}
+              </a>
+              <div className="mt-2 border border-gray-200 rounded-lg overflow-hidden max-w-full">
+                <img src={url} alt="Generated" className="max-w-full h-auto" />
+              </div>
+            </div>
+          );
+        } else {
+          // Regular URL, just make it clickable
+          arr.push(
+            <a 
+              key={`link-${index}`} 
+              href={url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline break-all"
+            >
+              {url}
+            </a>
+          );
+        }
+      }
+      return arr;
+    }, [] as React.ReactNode[]);
+  };
 
   return (
     <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
@@ -138,7 +191,9 @@ export function ChatInterface() {
               <div className={`${message.role === 'system' ? 'ml-3' : 'mr-3'} max-w-[80%] ${
                 message.role === 'user' ? 'bg-primary text-white' : 'bg-gray-100'
               } p-3 rounded-lg`}>
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <p className="text-sm whitespace-pre-wrap">
+                  {renderMessageContent(message.content)}
+                </p>
               </div>
               
               {message.role === 'user' && (

@@ -146,7 +146,7 @@ export function ChatInterface() {
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleSendMessage();
+      handleSendMessage(false);
     }
   };
   
@@ -189,7 +189,7 @@ export function ChatInterface() {
                     return isImageUrl ? (
                       <div key={i} className="mt-3 border border-gray-200 rounded-lg overflow-hidden">
                         <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">
-                          {language === 'es' ? 'Ver imagen en tamaño completo' : 'View full-size image'}
+                          {translations.viewFullImage}
                         </a>
                         <div className="mt-1">
                           <img src={url} alt="Generated" className="max-w-full h-auto rounded" />
@@ -238,7 +238,7 @@ export function ChatInterface() {
               className="bg-secondary text-white p-3 border-r border-blue-700 hover:bg-blue-600 flex items-center justify-center"
               onClick={() => handleSendMessage(true)}
               disabled={isLoading || !useApi || interactionsLeft <= 0 || apiKeyValid === false}
-              title={language === 'es' ? "Generar imagen" : "Generate image"}
+              title={translations.generateImage}
             >
               <i className="fas fa-image"></i>
             </button>
@@ -246,7 +246,7 @@ export function ChatInterface() {
             {/* Regular send button */}
             <button 
               className="bg-primary text-white p-3 rounded-r-lg hover:bg-blue-600"
-              onClick={() => handleSendMessage()}
+              onClick={() => handleSendMessage(false)}
               disabled={isLoading}
             >
               <i className="fas fa-paper-plane"></i>

@@ -147,13 +147,13 @@ export async function handleChatRequest(message: string, language: string): Prom
       // Format the response depending on success or failure
       if (imageResult.success && imageResult.url) {
         return language === 'es'
-          ? `He generado esta imagen para ti: ${imageResult.url}\n\nPuedes hacer clic en el enlace para verla.`
-          : `I've generated this image for you: ${imageResult.url}\n\nYou can click on the link to view it.`;
+          ? `He generado esta imagen para ti: ${imageResult.url}`
+          : `I've generated this image for you: ${imageResult.url}`;
       } else {
         return imageResult.message || 
           (language === 'es' 
-            ? "Lo siento, no pude generar la imagen solicitada."
-            : "Sorry, I couldn't generate the requested image.");
+            ? "No pude generar la imagen"
+            : "Couldn't generate the image");
       }
     }
     

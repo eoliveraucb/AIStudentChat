@@ -5,13 +5,14 @@ import { registerAuthRoutes } from "./controllers/auth";
 import { registerModuleRoutes } from "./controllers/modules";
 import { registerResourceRoutes } from "./controllers/resources";
 import { handleChatRequest } from "./services/openai";
+import OpenAI from "openai";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import { dirname } from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-import { dirname } from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
@@ -37,6 +38,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Chat API error:", error);
       return res.status(500).json({ message: "Error processing chat request" });
+    }
+  });
+  
+  // API key validation endpoint
+  app.get("/api/openai/validate", async (req, res) => {
+    try {
+      const apiKey = process.env.OPENAI_API_KEY;
+      
+      if (!apiKey) {
+        return res.json({ 
+          valid: false, 
+          message: "No API key found in environment variables" 
+        });
+      }
+      
+      try {
+        // Create OpenAI instance with the API key
+        const openai = new OpenAI({ apiKey: apiKey.trim() });
+        
+        // Make a simple API call to verify the key works
+        await openai.models.list();
+        
+        return res.json({ 
+          valid: true, 
+          message: "API key is valid" 
+        });
+      } catch (apiError: any) {
+        console.error("OpenAI API validation error:", apiError);
+        return res.json({ 
+          valid: false, 
+          message: `API key validation failed: ${apiError.message || 'Unknown error'}` 
+        });
+      }
+    } catch (error) {
+      console.error("API validation error:", error);
+      return res.status(500).json({ 
+        valid: false, 
+        message: "Error validating API key" 
+      });
     }
   });
 

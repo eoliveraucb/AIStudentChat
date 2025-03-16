@@ -3,8 +3,9 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { Switch } from "@/components/ui/switch";
 import { apiRequest } from "@/lib/queryClient";
-import { getPredefinedResponse } from "@/lib/openai";
+import { getPredefinedResponse, checkOpenAIAPIKey } from "@/lib/openai";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   role: 'user' | 'system';
@@ -14,14 +15,44 @@ interface Message {
 export function ChatInterface() {
   const { translations, language } = useLanguage();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([
     { role: 'system', content: translations.chatWelcomeMessage }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [useApi, setUseApi] = useState(true);
+  const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null);
   const [interactionsLeft, setInteractionsLeft] = useLocalStorage('interactions-left', 2);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Check if the OpenAI API key is valid when the component loads
+  useEffect(() => {
+    async function validateAPIKey() {
+      try {
+        const result = await checkOpenAIAPIKey();
+        setApiKeyValid(result.valid);
+        
+        // If API key is not valid, show a toast message and disable API usage
+        if (!result.valid) {
+          setUseApi(false);
+          toast({
+            title: language === 'es' ? "Modo limitado activado" : "Limited mode activated",
+            description: language === 'es' 
+              ? "No se pudo validar la clave de API de OpenAI. Usando respuestas predefinidas." 
+              : "Could not validate OpenAI API key. Using predefined responses.",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error('Error validating API key:', error);
+        setApiKeyValid(false);
+        setUseApi(false);
+      }
+    }
+    
+    validateAPIKey();
+  }, [language, toast]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

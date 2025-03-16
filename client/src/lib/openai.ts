@@ -1,3 +1,16 @@
+import { apiRequest } from "./queryClient";
+
+// Function to check if the OpenAI API key is valid
+export async function checkOpenAIAPIKey(): Promise<{valid: boolean, message: string}> {
+  try {
+    const response = await apiRequest('GET', '/api/openai/validate');
+    return await response.json();
+  } catch (error) {
+    console.error('Error checking OpenAI API key:', error);
+    return { valid: false, message: 'Error checking API key status' };
+  }
+}
+
 // Predefined responses for common prompts
 const predefinedResponses: Record<string, Record<string, string>> = {
   es: {

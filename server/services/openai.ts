@@ -16,7 +16,27 @@ export async function handleChatRequest(message: string, language: string): Prom
     }
     
     // Make sure we have a clean API key (remove any whitespace, URLs, etc.)
-    const cleanApiKey = apiKey.trim();
+    let cleanApiKey = apiKey.trim();
+    
+    // Check if the API key starts with "https://" or contains a URL
+    if (cleanApiKey.startsWith('http')) {
+      console.log("API key appears to be a URL. Attempting to extract just the key.");
+      try {
+        // Try to extract just the API key if it's embedded in a URL
+        const matches = cleanApiKey.match(/[a-zA-Z0-9_-]{30,}/);
+        if (matches && matches[0]) {
+          cleanApiKey = matches[0];
+        }
+      } catch (error) {
+        console.error("Error cleaning API key:", error);
+      }
+    }
+    
+    // Check if the key starts with "sk-" which is the standard format for OpenAI keys
+    if (!cleanApiKey.startsWith('sk-')) {
+      console.log("Warning: API key doesn't appear to be in standard OpenAI format");
+    }
+    
     console.log("Attempting to use OpenAI API with provided key");
     
     // Initialize OpenAI client

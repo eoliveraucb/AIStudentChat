@@ -189,7 +189,7 @@ export function ChatInterface() {
               <Switch 
                 checked={useApi}
                 onCheckedChange={setUseApi}
-                disabled={interactionsLeft <= 0}
+                disabled={interactionsLeft <= 0 || apiKeyValid === false}
               />
               <span className="ml-2 text-gray-600">{translations.useAI}</span>
             </label>

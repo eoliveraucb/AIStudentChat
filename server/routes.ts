@@ -44,7 +44,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API key validation endpoint
   app.get("/api/openai/validate", async (req, res) => {
     try {
-      const apiKey = process.env.OPENAI_API_KEY;
+      let apiKey = process.env.OPENAI_API_KEY;
       
       if (!apiKey) {
         return res.json({ 
@@ -54,8 +54,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // Create OpenAI instance with the API key
-        const openai = new OpenAI({ apiKey: apiKey.trim() });
+        // Clean and format the API key
+        apiKey = apiKey.trim();
+        
+        // Check if the API key is a URL or contains extra formatting
+        if (apiKey.startsWith('http')) {
+          console.log("API key appears to be a URL. Attempting to extract the key.");
+          try {
+            // Try to extract just the API key if it's embedded in a URL
+            const matches = apiKey.match(/[a-zA-Z0-9_-]{30,}/);
+            if (matches && matches[0]) {
+              apiKey = matches[0];
+              console.log("Successfully extracted API key from URL format");
+            }
+          } catch (extractError) {
+            console.error("Error extracting API key from URL:", extractError);
+          }
+        }
+        
+        // Check if key starts with "sk-" which is standard OpenAI format
+        if (!apiKey.startsWith('sk-')) {
+          console.log("Warning: API key doesn't start with 'sk-' prefix");
+        }
+        
+        // Log key format for debugging (without exposing the key)
+        const keyPreview = apiKey.substring(0, 5) + "..." + apiKey.substring(apiKey.length - 3);
+        console.log(`API key format: preview=${keyPreview}, length=${apiKey.length}`);
+        
+        // Create OpenAI instance with the cleaned API key
+        const openai = new OpenAI({ apiKey });
         
         // Make a simple API call to verify the key works
         await openai.models.list();

@@ -6,6 +6,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { getPredefinedResponse, checkOpenAIAPIKey } from "@/lib/openai";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 interface Message {
   role: 'user' | 'system';
@@ -153,9 +154,18 @@ export function ChatInterface() {
         <h3 className="font-semibold text-lg">{translations.chatPractice}</h3>
         <p className="text-sm text-gray-500">{translations.chatSubtitle}</p>
         <div className="mt-2">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            <i className="fas fa-exclamation-circle mr-1"></i> {translations.limitedUsage}
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            <i className="fas fa-info-circle mr-1"></i> {translations.limitedUsage}
           </span>
+          <div className="mt-1 text-xs text-gray-500">
+            <span>
+              {language === 'es' ? 'Consulta nuestra ' : 'Check our '}
+              <Link to="/modules" className="text-blue-600 hover:underline">
+                {language === 'es' ? 'guía de escritura de prompts' : 'prompt writing guide'}
+              </Link>
+              {language === 'es' ? ' para maximizar tu aprendizaje.' : ' to maximize your learning.'}
+            </span>
+          </div>
         </div>
       </div>
       

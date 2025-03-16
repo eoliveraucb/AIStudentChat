@@ -194,10 +194,17 @@ export function ChatInterface() {
               <span className="ml-2 text-gray-600">{translations.useAI}</span>
             </label>
           </div>
-          <div>
-            <span className="text-xs text-gray-500">
+          <div className="flex items-center">
+            <span className="text-xs text-gray-500 mr-2">
               {translations.remainingInteractions}: <span>{interactionsLeft}</span>
             </span>
+            <button 
+              onClick={() => setInteractionsLeft(5)} 
+              className="text-xs bg-secondary hover:bg-blue-700 text-white py-1 px-2 rounded-md"
+              title={translations.resetInteractions}
+            >
+              <i className="fas fa-sync-alt"></i>
+            </button>
           </div>
         </div>
       </div>

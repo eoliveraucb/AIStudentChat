@@ -90,7 +90,8 @@ export function ChatInterface() {
             const imageResult = await response.json();
             
             if (imageResult.success && imageResult.url) {
-              const successMessage = `${translations.imageGenerated}:\n\n${imageResult.url}`;
+              // Simplified format for better image detection
+              const successMessage = `${translations.imageGenerated}: ${imageResult.url}`;
               
               botResponse = { role: 'system' as const, content: successMessage };
             } else {
@@ -177,20 +178,51 @@ export function ChatInterface() {
                 </p>
                 
                 {/* Display images if URLs are present in the message */}
-                {message.role === 'system' && message.content.includes('https://') && 
-                  message.content.match(/(https?:\/\/[^\s]+)/g)?.map((url, i) => {
-                    const isImageUrl = url.match(/\.(jpeg|jpg|gif|png)$/) !== null || url.includes('images.openai.com');
-                    return isImageUrl ? (
-                      <div key={i} className="mt-3 border border-gray-200 rounded-lg overflow-hidden">
-                        <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">
-                          {translations.viewFullImage}
-                        </a>
-                        <div className="mt-1">
-                          <img src={url} alt="Generated" className="max-w-full h-auto rounded" />
-                        </div>
-                      </div>
-                    ) : null;
-                  })
+                {message.role === 'system' && 
+                  (() => {
+                    // First try to extract the URL from a structured format like "He generado esta imagen para ti: URL"
+                    const content = message.content;
+                    const urlMatch = content.match(/.*?:\s*(https?:\/\/[^\s]+)/);
+                    
+                    if (urlMatch && urlMatch[1]) {
+                      const url = urlMatch[1];
+                      const isImageUrl = url.match(/\.(jpeg|jpg|gif|png)$/) !== null || 
+                        url.includes('images.openai.com') || 
+                        url.includes('oaidalleapiprodscus');
+                        
+                      if (isImageUrl) {
+                        return (
+                          <div className="mt-3 border border-gray-200 rounded-lg overflow-hidden">
+                            <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">
+                              {translations.viewFullImage}
+                            </a>
+                            <div className="mt-1">
+                              <img src={url} alt="Generated" className="max-w-full h-auto rounded" />
+                            </div>
+                          </div>
+                        );
+                      }
+                    }
+                    
+                    // If no match found in structured format, try the old way
+                    return content.includes('https://') && 
+                      content.match(/(https?:\/\/[^\s]+)/g)?.map((url, i) => {
+                        const isImageUrl = url.match(/\.(jpeg|jpg|gif|png)$/) !== null || 
+                          url.includes('images.openai.com') || 
+                          url.includes('oaidalleapiprodscus');
+                          
+                        return isImageUrl ? (
+                          <div key={i} className="mt-3 border border-gray-200 rounded-lg overflow-hidden">
+                            <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">
+                              {translations.viewFullImage}
+                            </a>
+                            <div className="mt-1">
+                              <img src={url} alt="Generated" className="max-w-full h-auto rounded" />
+                            </div>
+                          </div>
+                        ) : null;
+                      });
+                  })()
                 }
               </div>
               

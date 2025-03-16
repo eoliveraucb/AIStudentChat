@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { registerAuthRoutes } from "./controllers/auth";
 import { registerModuleRoutes } from "./controllers/modules";
 import { registerResourceRoutes } from "./controllers/resources";
-import { handleChatRequest } from "./services/openai";
+import { handleChatRequest, generateImage } from "./services/openai";
 import OpenAI from "openai";
 import path from "path";
 import fs from "fs";
@@ -38,6 +38,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Chat API error:", error);
       return res.status(500).json({ message: "Error processing chat request" });
+    }
+  });
+  
+  // Image Generation API Endpoint
+  app.post("/api/images/generate", async (req, res) => {
+    try {
+      const { prompt, language } = req.body;
+      
+      if (!prompt) {
+        return res.status(400).json({ 
+          success: false, 
+          message: language === 'es' ? "Se requiere descripción para la imagen" : "Image description is required" 
+        });
+      }
+      
+      // Check if interactions limit is enforced (optional)
+      // Logic can be added here if needed
+      
+      // Call the image generation service
+      const result = await generateImage(prompt, language || 'es');
+      
+      // Return the result
+      return res.json(result);
+    } catch (error) {
+      console.error("Image generation API error:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Error processing image generation request" 
+      });
     }
   });
   

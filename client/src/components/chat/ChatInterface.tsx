@@ -62,10 +62,15 @@ export function ChatInterface() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = async (generateImageMode = false) => {
     if (!inputValue.trim()) return;
     
-    const userMessage = { role: 'user' as const, content: inputValue };
+    // Add prefix for image generation if requested
+    const messageContent = generateImageMode 
+      ? (language === 'es' ? `Genera una imagen de: ${inputValue}` : `Generate an image of: ${inputValue}`) 
+      : inputValue;
+    
+    const userMessage = { role: 'user' as const, content: messageContent };
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
@@ -74,14 +79,47 @@ export function ChatInterface() {
       let botResponse;
       
       if (useApi && interactionsLeft > 0) {
-        // Use OpenAI API
-        const response = await apiRequest('POST', '/api/chat', {
-          message: inputValue,
-          language
-        });
-        
-        const data = await response.json();
-        botResponse = { role: 'system' as const, content: data.message };
+        if (generateImageMode) {
+          // Handle image generation request
+          try {
+            const response = await apiRequest('POST', '/api/images/generate', {
+              prompt: inputValue,
+              language
+            });
+            
+            const imageResult = await response.json();
+            
+            if (imageResult.success && imageResult.url) {
+              const successMessage = language === 'es'
+                ? `He generado esta imagen para ti:\n\n${imageResult.url}`
+                : `I've generated this image for you:\n\n${imageResult.url}`;
+              
+              botResponse = { role: 'system' as const, content: successMessage };
+            } else {
+              const errorMessage = language === 'es'
+                ? `No pude generar la imagen: ${imageResult.message || 'Error desconocido'}`
+                : `Couldn't generate the image: ${imageResult.message || 'Unknown error'}`;
+              
+              botResponse = { role: 'system' as const, content: errorMessage };
+            }
+          } catch (imageError) {
+            console.error('Error generating image:', imageError);
+            const errorMessage = language === 'es'
+              ? 'Ocurrió un error al generar la imagen. Por favor, intenta con otra descripción.'
+              : 'An error occurred while generating the image. Please try with a different description.';
+            
+            botResponse = { role: 'system' as const, content: errorMessage };
+          }
+        } else {
+          // Regular text chat
+          const response = await apiRequest('POST', '/api/chat', {
+            message: inputValue,
+            language
+          });
+          
+          const data = await response.json();
+          botResponse = { role: 'system' as const, content: data.message };
+        }
         
         // Decrease interactions left
         setInteractionsLeft(interactionsLeft - 1);
@@ -112,58 +150,7 @@ export function ChatInterface() {
     }
   };
   
-  // Helper function to render message content with clickable links
-  const renderMessageContent = (content: string) => {
-    // Regular expression to find URLs in text
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    
-    // If no URLs in the content, just return the content as is
-    if (!content.match(urlRegex)) {
-      return content;
-    }
-    
-    // Split the content by URLs and create an array of text and link elements
-    const parts = content.split(urlRegex);
-    const matches = content.match(urlRegex) || [];
-    
-    return parts.reduce((arr, part, index) => {
-      if (part) {
-        arr.push(<span key={`text-${index}`}>{part}</span>);
-      }
-      if (matches[index]) {
-        const url = matches[index];
-        const isImageUrl = url.match(/\.(jpeg|jpg|gif|png)$/) !== null || url.includes('images.openai.com');
-        
-        if (isImageUrl) {
-          // It's an image URL, render both link and preview
-          arr.push(
-            <div key={`img-${index}`} className="mt-2 mb-2">
-              <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">
-                {url}
-              </a>
-              <div className="mt-2 border border-gray-200 rounded-lg overflow-hidden max-w-full">
-                <img src={url} alt="Generated" className="max-w-full h-auto" />
-              </div>
-            </div>
-          );
-        } else {
-          // Regular URL, just make it clickable
-          arr.push(
-            <a 
-              key={`link-${index}`} 
-              href={url} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline break-all"
-            >
-              {url}
-            </a>
-          );
-        }
-      }
-      return arr;
-    }, [] as React.ReactNode[]);
-  };
+
 
   return (
     <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
@@ -192,8 +179,25 @@ export function ChatInterface() {
                 message.role === 'user' ? 'bg-primary text-white' : 'bg-gray-100'
               } p-3 rounded-lg`}>
                 <p className="text-sm whitespace-pre-wrap">
-                  {renderMessageContent(message.content)}
+                  {message.content}
                 </p>
+                
+                {/* Display images if URLs are present in the message */}
+                {message.role === 'system' && message.content.includes('https://') && 
+                  message.content.match(/(https?:\/\/[^\s]+)/g)?.map((url, i) => {
+                    const isImageUrl = url.match(/\.(jpeg|jpg|gif|png)$/) !== null || url.includes('images.openai.com');
+                    return isImageUrl ? (
+                      <div key={i} className="mt-3 border border-gray-200 rounded-lg overflow-hidden">
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">
+                          {language === 'es' ? 'Ver imagen en tamaño completo' : 'View full-size image'}
+                        </a>
+                        <div className="mt-1">
+                          <img src={url} alt="Generated" className="max-w-full h-auto rounded" />
+                        </div>
+                      </div>
+                    ) : null;
+                  })
+                }
               </div>
               
               {message.role === 'user' && (
@@ -228,13 +232,26 @@ export function ChatInterface() {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
           />
-          <button 
-            className="bg-primary text-white p-3 rounded-r-lg hover:bg-blue-600"
-            onClick={handleSendMessage}
-            disabled={isLoading}
-          >
-            <i className="fas fa-paper-plane"></i>
-          </button>
+          <div className="flex">
+            {/* Image generation button - uses special CSS to show it's a different action */}
+            <button 
+              className="bg-secondary text-white p-3 border-r border-blue-700 hover:bg-blue-600 flex items-center justify-center"
+              onClick={() => handleSendMessage(true)}
+              disabled={isLoading || !useApi || interactionsLeft <= 0 || apiKeyValid === false}
+              title={language === 'es' ? "Generar imagen" : "Generate image"}
+            >
+              <i className="fas fa-image"></i>
+            </button>
+            
+            {/* Regular send button */}
+            <button 
+              className="bg-primary text-white p-3 rounded-r-lg hover:bg-blue-600"
+              onClick={() => handleSendMessage()}
+              disabled={isLoading}
+            >
+              <i className="fas fa-paper-plane"></i>
+            </button>
+          </div>
         </div>
         
         {/* API Toggle */}
